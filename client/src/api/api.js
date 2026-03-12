@@ -1,5 +1,6 @@
 // Shirley, Xinyi, Jiayu, Marina
-const BASE = "/api"; 
+import conf from "../conf/conf.js";
+const BASE = conf.server_url;
 
 async function request(path, { method = "GET", params, body, headers } = {}) {
   let url = path.startsWith("http") ? path : `${BASE}${path}`;
