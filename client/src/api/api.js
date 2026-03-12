@@ -35,4 +35,6 @@ export const api = {
   del: (path) => request(path, { method: "DELETE" }),
   patch: (path, body) => request(path, { method: "PATCH", body }),
   put: (path, body) => request(path, { method: "PUT", body }),
+  // Add login method for POST /api/auth/login
+  login: (body) => request("/auth/login", { method: "POST", body }),
 };
