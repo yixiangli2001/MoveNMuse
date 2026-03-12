@@ -1,81 +1,126 @@
 # MoveNMuse
-github: https://github.com/marinankato/MoveNMuse.git
-live demo: https://move-n-muse-fe.vercel.app/
 
-Move N Muse is a full-stack web platform for discovering, booking, and managing dance and music classes. It includes session scheduling, room hire management, and secure online bookings — all within a clean, responsive interface designed to make studio management simple for small businesses.
+GitHub: https://github.com/marinankato/MoveNMuse.git
+Live Demo: https://move-n-muse-fe.vercel.app/
 
-----
+MoveNMuse is a full-stack web platform for discovering, booking, and managing dance and music classes.
+It supports session scheduling, room hire management, and secure online bookings within a clean,
+responsive interface designed for small studios and creative spaces.
+
+---
+
 ## Tech Stack
 
-**Frontend:**
+### Frontend
 - React (Vite)
 - Tailwind CSS
 - Redux Toolkit
 - React Router
 
-**Backend:**
+### Backend
 - Node.js (v22)
 - Express.js
 - MongoDB (Mongoose)
 - JWT Authentication
 
-**DevOps & Hosting:**
+### DevOps & Hosting
 - Azure App Service (Linux)
 - Azure Pipelines (CI/CD)
-- GitHub for source control
+- GitHub (Version Control)
 
-----
+---
+
 ## Project Structure
 
-The repo is divided into two main folders:
-/server for backend code and /client for frontend code.
+The repository is organised into two main folders:
 
-----
+/server   → Backend API and database logic
+/client   → Frontend React application
+
+---
+
 ## Feature Responsibilities
-- **Marina Kato**: User, Login/Logout, Account, Booking History, Booking Details 
-- **Jiayu Dai**: Course Viewing, Course Management, Booking Course, Instructor Management
-- **Xinyi Cai**: Room Viewing, Room Management, Room Slot
-- **Shirley Yi**: Cart, Payment, Payment Detail, Payment Methods
 
----- 
+- Marina Kato
+  User Authentication, Login/Logout, Account Management,
+  Booking History, Booking Details
+
+- Jiayu Dai
+  Course Viewing, Course Management, Booking Courses,
+  Instructor Management
+
+- Xinyi Cai
+  Room Viewing, Room Management, Room Slot Scheduling
+
+- Shirley Yi
+  Cart System, Payment Processing, Payment Details,
+  Payment Methods
+
+---
+
 ## Prerequisites
-Before you begin, ensure you have:
 
-- [Node.js 22.x](https://nodejs.org/)  
-- [MongoDB 7+](https://www.mongodb.com/try/download/community) (local or MongoDB Atlas)  
-- [Git](https://git-scm.com/)
-- An [Azure account](https://azure.microsoft.com/) (for deployment)
+Before running the project, ensure you have the following installed:
 
-----
-## How to set up:
-- Create a `.env` file in the `server` directory:
-    # Database
-    MONGO_DB_URL="mongodb+srv://marina:L4AZ0KcESie31Uyq@movenmuse.3s5x6fi.mongodb.net/?retryWrites=true&w=majority&appName=MoveNMuse"
-    PORT=5001
+Node.js 22.x
+MongoDB 7+ (Local or MongoDB Atlas)
+Git
+Azure account (for deployment)
 
-    CORS_ORIGIN1=http://localhost:5173
-    CORS_ORIGIN2=
-    CORS_ORIGIN3=
+---
 
-    JWT_SECRET=mQ3Vx6pQvLz3GgHUL1bOEWkRWzXyzRwIjsfHEErS+ZA=
+## Environment Setup
 
+Create a `.env` file inside the server directory:
 
-## How to run locally:
-- Open two terminals
-- In one have server:
-    run cd backend
-    npm install
-    npm run dev
-- In another have frontend: 
-    run cd client
-    npm install
-    npm run dev
-- Sample users to test features:
-    email: alice@example.com
-    password: pass123
-    
-    email: customer@example.com
-    password: pass123
-   
-   email: staff@example.com
-    password: pass123
+# Database
+MONGO_DB_URL=<your_mongodb_connection_string>
+
+# Server
+PORT=5001
+
+# CORS
+CORS_ORIGIN1=http://localhost:5173
+CORS_ORIGIN2=
+CORS_ORIGIN3=
+
+# Authentication
+JWT_SECRET=<your_jwt_secret>
+
+Important:
+Sensitive credentials such as database connection strings and JWT secrets
+should not be committed to the repository. Use environment variables instead.
+
+---
+
+## Running the Project Locally
+
+Open two terminals.
+
+Backend:
+
+cd server
+npm install
+npm run dev
+
+Frontend:
+
+cd client
+npm install
+npm run dev
+
+---
+
+## Test Accounts
+
+Customer
+email: alice@example.com
+password: pass123
+
+Customer
+email: customer@example.com
+password: pass123
+
+Staff
+email: staff@example.com
+password: pass123
