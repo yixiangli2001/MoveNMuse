@@ -1,9 +1,12 @@
 // Shirley, Xinyi, Jiayu, Marina
 import conf from "../conf/conf.js";
 const BASE = conf.server_url;
+const API_PREFIX = "/api";
 
 async function request(path, { method = "GET", params, body, headers } = {}) {
-  let url = path.startsWith("http") ? path : `${BASE}${path}`;
+  // Always prefix with /api unless path already starts with /api or http
+  let apiPath = path.startsWith("/api") ? path : `${API_PREFIX}${path}`;
+  let url = apiPath.startsWith("http") ? apiPath : `${BASE}${apiPath}`;
   if (params && Object.keys(params).length) {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
