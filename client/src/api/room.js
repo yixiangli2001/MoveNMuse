@@ -1,5 +1,5 @@
 // Shirley, Xinyi
-const API = `${import.meta.env.VITE_BACKEND_URL || ''}/api/rooms`;
+const API = `${import.meta.env.VITE_SERVER_URL || ''}/api/rooms`;
 
 fetch("/")
 .then(r => r.text())
