@@ -1,5 +1,6 @@
 # MoveNMuse
 github: https://github.com/marinankato/MoveNMuse.git
+live demo: https://move-n-muse-fe.vercel.app/
 
 Move N Muse is a full-stack web platform for discovering, booking, and managing dance and music classes. It includes session scheduling, room hire management, and secure online bookings — all within a clean, responsive interface designed to make studio management simple for small businesses.
 
