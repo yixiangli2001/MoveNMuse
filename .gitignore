@@ -46,3 +46,9 @@ locales/*.json
 # mock data
 server/src/db/*.json
 *.json
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
