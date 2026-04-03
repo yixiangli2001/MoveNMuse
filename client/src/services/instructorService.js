@@ -1,28 +1,29 @@
-// Jiayu
-import { api } from "../api/api";
+import axiosClient from "../api/axiosClient";
+
+const BASE_PATH = "/instructors";
 
 // support filtering/pagination
 export function listInstructors(params) {
-  return api.get("/instructors", params);
+  return axiosClient.get(BASE_PATH, { params });
 }
 
 // detail
 export function getInstructor(id) {
-  return api.get(`/instructors/${id}`);
+  return axiosClient.get(`${BASE_PATH}/${id}`);
 }
 
 // create
 export function createInstructor(payload) {
   // payload: { name, email, phone, bio, status }
-  return api.post("/instructors", payload);
+  return axiosClient.post(BASE_PATH, payload);
 }
 
 // update
 export function updateInstructor(id, payload) {
-  return api.put(`/instructors/${id}`, payload);
+  return axiosClient.put(`${BASE_PATH}/${id}`, payload);
 }
 
 // delete
 export function deleteInstructor(id) {
-  return api.del(`/instructors/${id}`);
+  return axiosClient.delete(`${BASE_PATH}/${id}`);
 }
