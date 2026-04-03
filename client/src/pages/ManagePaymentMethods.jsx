@@ -6,19 +6,7 @@ import {
   getPaymentDetails,
   setDefaultPaymentDetail,
   deletePaymentDetail,
-  addPaymentDetail
 } from "../services/paymentService";
-
-function CardSkeleton() {
-  return (
-    <div className="animate-pulse bg-white rounded-lg shadow-md p-6">
-      <div className="h-5 w-40 bg-gray-200 rounded mb-4" />
-      <div className="h-4 w-64 bg-gray-200 rounded mb-2" />
-      <div className="h-4 w-48 bg-gray-200 rounded mb-2" />
-      <div className="h-4 w-28 bg-gray-200 rounded" />
-    </div>
-  );
-}
 
 export default function ManagePaymentMethods() {
   const user = useSelector((s) => s.auth.userData);
@@ -32,7 +20,6 @@ export default function ManagePaymentMethods() {
   const [deletingId, setDeletingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // load methods
   useEffect(() => {
     let aborted = false;
     (async () => {
@@ -56,7 +43,6 @@ export default function ManagePaymentMethods() {
     };
   }, [userId, showAddForm]);
 
-  // set default payment method
   const onSetDefault = async (id) => {
     try {
       setSettingDefaultId(id);
@@ -73,7 +59,7 @@ export default function ManagePaymentMethods() {
       setSettingDefaultId(null);
     }
   };
-// delete payment method
+
   const onDelete = async (id) => {
     if (!confirm("Remove this payment method?")) return;
     try {
@@ -92,27 +78,38 @@ export default function ManagePaymentMethods() {
     typeof n === "string" && n.length >= 4 ? n.slice(-4) : "••••";
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">Manage My Payment Methods</h1>
+    <div className="max-w-7xl mx-auto p-6 pt-32 pb-24 space-y-16">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 reveal-up">
+        <div className="space-y-4">
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-blue-600 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Back
+          </button>
+          <h1 className="text-6xl font-display font-light text-neutral-900">Payment <span className="italic text-blue-600">Sanctuary</span></h1>
+          <p className="text-xl text-neutral-500 font-light max-w-xl">Securely manage your artistic funding. Every card is a key to your next creative breakthrough.</p>
+        </div>
+        
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="px-8 py-3 bg-neutral-900 text-white rounded-full font-medium hover:bg-blue-600 transition-all shadow-lg shadow-neutral-900/10"
+        >
+          {showAddForm ? "Close Form" : "Add New Method"}
+        </button>
+      </div>
 
       {errorMsg && (
-        <div className="mb-4 text-center text-sm font-medium text-red-600">
+        <div className="rounded-2xl border border-red-100 bg-red-50 text-red-700 text-sm px-6 py-4 animate-fade-in">
           {errorMsg}
         </div>
       )}
 
-      <div className="mb-4 flex justify-end">
-        <button
-          type="button"
-          onClick={() => setShowAddForm((s) => !s)}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
-        >
-          {showAddForm ? "Hide form" : "Add new card"}
-        </button>
-      </div>
-
       {showAddForm && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="glass rounded-[3rem] p-12 max-w-2xl mx-auto reveal-up shadow-2xl shadow-neutral-900/5 animate-zoom-in">
+          <h2 className="text-3xl font-display mb-10 text-center">Add artistic <span className="italic">funding</span></h2>
           <PaymentMethodForm
             onSubmit={async (payload) => {
               try {
@@ -133,73 +130,81 @@ export default function ManagePaymentMethods() {
         </div>
       )}
 
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-      ) : paymentDetails.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-600">
-          You do not have any saved payment methods yet.
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {paymentDetails.map((p) => (
-            <div
-              key={p.paymentDetailId}
-              className={`bg-white rounded-lg shadow-md p-6 border ${
-                p.isDefault ? "border-blue-400" : "border-gray-200"
-              }`}
-            >
-              {/* Row 1: Brand & Last4 & Default badge */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-semibold">
-                  {String(p.cardBrand).toLowerCase().includes("visa")
-                    ? "Visa"
-                    : "Mastercard"}{" "}
-                  •••• {maskLast4(p.cardNumber)}
-                </div>
-                {p.isDefault && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                    Default
-                  </span>
-                )}
-              </div>
+      <div className="min-h-[40vh]">
+        {loading ? (
+          <div className="py-20 text-center animate-pulse font-display text-2xl text-neutral-400">Authenticating vaults...</div>
+        ) : paymentDetails.length === 0 ? (
+          <div className="py-20 text-center space-y-6 reveal-up">
+            <p className="text-2xl font-display italic text-neutral-400">No payment methods found.</p>
+          </div>
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 reveal-up" style={{ animationDelay: "100ms" }}>
+            {paymentDetails.map((p) => (
+              <div
+                key={p.paymentDetailId}
+                className={`group relative h-64 rounded-[2.5rem] p-10 transition-all duration-700 border ${
+                  p.isDefault 
+                    ? "bg-neutral-900 text-white border-neutral-800 shadow-2xl shadow-neutral-900/20" 
+                    : "bg-white text-neutral-900 border-neutral-100 shadow-xl shadow-neutral-900/5 hover:border-blue-200"
+                }`}
+              >
+                <div className="h-full flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50">
+                        {String(p.cardBrand).toUpperCase()}
+                      </div>
+                      <div className="text-3xl font-display tracking-widest flex items-center gap-2">
+                        <span className="opacity-30">••••</span>
+                        <span>{maskLast4(p.cardNumber)}</span>
+                      </div>
+                    </div>
+                    {p.isDefault && (
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-400/30 px-3 py-1 rounded-full">
+                        Primary
+                      </span>
+                    )}
+                  </div>
 
-              {/* Row 2: View-only details */}
-              <div className="space-y-1 text-sm text-gray-700">
-                {p.nickname && <div>Nickname: {p.nickname}</div>}
-                <div>Cardholder: {p.name}</div>
-                <div>
-                  Expires: {String(p.expiryMonth).padStart(2, "0")}/{p.expiryYear}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold uppercase tracking-widest opacity-40">Cardholder</div>
+                        <div className="text-sm font-medium">{p.name}</div>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <div className="text-[10px] font-bold uppercase tracking-widest opacity-40">Expires</div>
+                        <div className="text-sm font-medium">{String(p.expiryMonth).padStart(2, "0")}/{p.expiryYear}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 pt-4 border-t border-current opacity-10 group-hover:opacity-20 transition-opacity" />
+                    
+                    <div className="flex items-center justify-between gap-4">
+                      {!p.isDefault && (
+                        <button
+                          onClick={() => onSetDefault(p.paymentDetailId)}
+                          disabled={settingDefaultId === p.paymentDetailId}
+                          className="text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:text-blue-700 disabled:opacity-30 transition-colors"
+                        >
+                          {settingDefaultId === p.paymentDetailId ? "Setting..." : "Set as Primary"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onDelete(p.paymentDetailId)}
+                        disabled={deletingId === p.paymentDetailId}
+                        className={`text-[10px] font-bold uppercase tracking-widest ml-auto transition-colors ${p.isDefault ? "text-white/40 hover:text-red-400" : "text-neutral-300 hover:text-red-500"}`}
+                      >
+                        {deletingId === p.paymentDetailId ? "Removing..." : "Remove"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Row 3: Actions (no edit) */}
-              <div className="mt-4 flex items-center gap-2">
-                {!p.isDefault && (
-                  <button
-                    className="px-3 py-1 rounded bg-white border hover:bg-gray-50"
-                    onClick={() => onSetDefault(p.paymentDetailId)}
-                    disabled={settingDefaultId === p.paymentDetailId}
-                    type="button"
-                  >
-                    {settingDefaultId === p.paymentDetailId ? "Setting..." : "Set default"}
-                  </button>
-                )}
-                <button
-                  className="ml-auto px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
-                  onClick={() => onDelete(p.paymentDetailId)}
-                  disabled={deletingId === p.paymentDetailId}
-                  type="button"
-                >
-                  {deletingId === p.paymentDetailId ? "Removing..." : "Remove"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
