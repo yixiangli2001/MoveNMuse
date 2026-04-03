@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import conf from "./conf/conf.js";
 import Routes from "./routes/index.js";
-import roomSlotRoutes from "./routes/roomSlot.routes.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -45,7 +45,6 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use("/api", Routes); 
-app.use("/api/roomSlots", roomSlotRoutes);
 
 app.post("/testing", (req, res) => {
   console.log("Testing");
@@ -55,5 +54,8 @@ app.post("/testing", (req, res) => {
 app.get("/", (req, res) => {
   res.send("Welcome to the Express Server!");
 });
+
+// Global error handler
+app.use(errorHandler);
 
 export default app;
