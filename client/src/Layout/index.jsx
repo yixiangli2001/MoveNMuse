@@ -9,18 +9,14 @@ import { jwtDecode } from "jwt-decode";
 
 const Layout = () => {
   const dispatch = useDispatch();
-
-  const showHeader = true;
+  const location = useLocation();
 
   useEffect(() => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    console.log("TOKEN FOUND:", token);
 
     if (token && token.split(".").length === 3) {
       try {
         const decoded = jwtDecode(token);
-        console.log("DECODED TOKEN:", decoded);
-
         dispatch(
           login({
             userId: decoded.userId, 
@@ -33,22 +29,19 @@ const Layout = () => {
       } catch (err) {
         console.error("Token decoding failed:", err);
       }
-    } else {
-      console.warn("Invalid token format or user logged out.");
     }
   }, [dispatch]);
 
   return (
     <>
       <ScrollToTop />
-      {showHeader && <Header />}
+      <Header />
 
-      <div className="flex flex-col lg:flex-row min-h-screen">
-        <div className="flex-1 bg-gray-100 overflow-auto">
+      <main className="min-h-screen">
+        <div key={location.pathname}>
           <Outlet />
         </div>
-      </div>
-
+      </main>
     </>
   );
 };

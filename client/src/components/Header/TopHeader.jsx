@@ -1,13 +1,14 @@
 // Shirley, Marina
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeaderData from "../../Data/HeaderData.jsx";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { LogoutBtn, LoginButton } from "../../utils";
 import { useAuth } from "../../components/auth/AuthContext.jsx";
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const authStatus = useSelector((state) => state.auth.status);
   const userData = useSelector((state) => state.auth.userData);
   const userName = userData?.firstName;
@@ -15,69 +16,88 @@ const Header = () => {
   const { topHeader, userHeader } = HeaderData;
   const { user } = useAuth();
 
+  const [scrolled, setScrolled] = useState(false);
 
-  const normalize = (slug) => (slug?.startsWith("/") ? slug : `/${slug || ""}`);
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const isStaff = user?.role === "staff" || user?.role === "admin";
 
   return (
-    <div className="sticky top-0 left-0 w-full z-50 flex flex-wrap justify-between items-center py-6 px-6 bg-gray-900 text-white shadow-lg border-b-4 border-gray-800">
-      <div
-        className="flex items-center justify-start cursor-pointer gap-2 hover:shadow-lg rounded-lg transition-all duration-300"
-        onClick={() => navigate("/")}
+    <header 
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 px-6 py-4 ${
+        scrolled ? "mt-2" : "mt-0"
+      }`}
+    >
+      <div 
+        className={`max-w-7xl mx-auto flex justify-between items-center px-8 py-3 rounded-full transition-all duration-500 ${
+          scrolled 
+            ? "glass shadow-2xl shadow-neutral-900/10 py-4" 
+            : "bg-transparent"
+        }`}
       >
-        <div className="ml-2 text-2xl font-semibold text-white md:text-3xl hover:text-indigo-400 transition-all duration-300">
-          {topHeader.appName}
+        {/* App Name / Logo */}
+        <div
+          className="flex items-center cursor-pointer group"
+          onClick={() => navigate("/")}
+        >
+          <div className="text-2xl font-display font-bold tracking-tight text-neutral-900 group-hover:text-blue-600 transition-colors">
+            Move <span className="italic font-light text-blue-500">n</span> Muse
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="hidden md:flex items-center gap-8">
+          {topHeader.navItems.map((item) => (
+            item.active && (
+              <Link
+                key={item.name}
+                to={item.slug}
+                className={`text-sm font-medium tracking-wide transition-all hover:text-blue-600 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-blue-600 after:transition-all hover:after:w-full ${
+                  location.pathname === item.slug ? "text-blue-600 after:w-full" : "text-neutral-600"
+                }`}
+              >
+                {item.name}
+              </Link>
+            )
+          ))}
+          
+          {/* Authenticated User Links */}
+          {authStatus && userHeader.navItems.map((item) => (
+            item.active && (
+              <Link
+                key={item.name}
+                to={item.slug}
+                className={`text-sm font-medium tracking-wide transition-all hover:text-blue-600 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-blue-600 after:transition-all hover:after:w-full ${
+                  location.pathname === item.slug ? "text-blue-600 after:w-full" : "text-neutral-600"
+                }`}
+              >
+                {item.name}
+              </Link>
+            )
+          ))}
+        </nav>
+
+        {/* User Actions */}
+        <div className="flex items-center gap-6">
+          {authStatus ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-neutral-500 hidden lg:block">
+                Artistic greetings, <span className="text-neutral-900">{userName}</span>
+              </span>
+              <LogoutBtn />
+            </div>
+          ) : (
+            <LoginButton />
+          )}
         </div>
       </div>
-      <div className="flex items-center justify-center gap-4">
-        {topHeader.navItems
-          .map(
-            (item) =>
-              item.active && (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    navigate(item.slug);
-                  }}
-                  className="px-6 py-2 rounded-lg text-lg font-medium hover:bg-blue-500 hover:text-white transition duration-300"
-                >
-                  {item.name}
-                </button>
-              )
-          )}
-
-      </div>
-      <div>
-          {authStatus && userHeader.navItems.map(
-            (item) =>
-              item.active && (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    navigate(item.slug);
-                  }}
-                  className="px-6 py-2 rounded-lg text-lg font-medium hover:bg-blue-500 hover:text-white transition duration-300"
-                >
-                  {item.name}
-                </button>
-              )
-          )}
-      </div>
-
-      <div>
-        {authStatus ? (
-          <div className="flex items-center gap-4">
-            <div className="text-lg font-medium">Hello, {userName}</div>
-            <LogoutBtn />
-          </div>
-        ) : (
-          <div>
-            <LoginButton />
-          </div>
-        )}
-      </div>
-    </div>
+    </header>
   );
 };
 
