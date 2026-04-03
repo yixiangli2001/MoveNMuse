@@ -1,6 +1,6 @@
 // Shirley, Marina
 import { Outlet, useLocation } from "react-router-dom";
-import { Header } from "../components";
+import { Header, Footer } from "../components";
 import ScrollToTop from "../components/ScrollToTop";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
@@ -42,6 +42,8 @@ const Layout = () => {
           <Outlet />
         </div>
       </main>
+
+      <Footer />
     </>
   );
 };
