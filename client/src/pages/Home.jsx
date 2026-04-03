@@ -30,7 +30,7 @@ const Home = () => {
   ];
 
   return (
-    <div className="bg-[#fdfdfd] min-h-screen overflow-x-hidden pt-32 pb-24">
+    <div className="bg-[#fdfdfd] min-h-screen overflow-x-hidden pt-32">
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 mb-32 relative">
         <div className="max-w-3xl reveal-up">

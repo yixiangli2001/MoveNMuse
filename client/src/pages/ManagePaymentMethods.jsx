@@ -6,6 +6,7 @@ import {
   getPaymentDetails,
   setDefaultPaymentDetail,
   deletePaymentDetail,
+  addPaymentDetail
 } from "../services/paymentService";
 
 export default function ManagePaymentMethods() {
