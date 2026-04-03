@@ -1,6 +1,6 @@
 // Xinyi
 import { useEffect, useState } from "react";
-import { listRooms, createRoom, deleteRoom, updateRoom } from "../api/roomAdmin.js";
+import { fetchRooms as listRooms, createRoom, deleteRoom, updateRoom } from "../services/roomService";
 
 export default function RoomManagement() {
     const [rooms, setRooms] = useState([]);
@@ -23,8 +23,8 @@ export default function RoomManagement() {
     const loadRooms = async () => {
         try {
             setLoading(true);
-            const data = await listRooms();
-            setRooms(data);
+            const res = await listRooms();
+            setRooms(res.data || res);
         } catch (err) {
             console.error("Failed to load rooms:", err);
         } finally {

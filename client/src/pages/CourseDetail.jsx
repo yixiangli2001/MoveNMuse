@@ -3,8 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 // services
-import { getCourse } from "../services/courseService";
+import { getCourse, updateCourse } from "../services/courseService";
 import { getSessionsByCourse, deleteSession } from "../services/sessionService";
+import { addItemToCart } from "../services/cartService";
 
 // course components
 import SessionList from "../components/Course/SessionList.jsx";
@@ -85,7 +86,7 @@ function CourseDetail() {
     setErr("");
     try {
       const r = await getCourse(id);
-      setCourse(r);
+      setCourse(r.data || r);
     } catch (e) {
       setErr(e.message || "Failed to load");
     } finally {
@@ -158,51 +159,18 @@ function CourseDetail() {
         setVErr({});
       }
 
-      const token = getToken?.();
       if (!token || !isStaff) {
         alert("Only staff can edit courses.");
         return;
       }
 
-      const API_BASE = (import.meta.env?.VITE_API_BASE || "/api").replace(
-        /\/$/,
-        ""
-      );
-      const res = await fetch(
-        `${API_BASE}/courses/${encodeURIComponent(course.courseId)}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: form.name,
-            description: form.description,
-            defaultPrice: Number(form.price),
-            category: form.category,
-            level: form.level,
-          }),
-          credentials: "include",
-        }
-      );
-
-      if (res.status === 401) {
-        alert("Session expired. Please log in again.");
-        nav("/login", {
-          replace: false,
-          state: { redirectTo: location.pathname },
-        });
-        return;
-      }
-      if (res.status === 403) {
-        alert("You do not have permission to edit this course.");
-        return;
-      }
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Update failed: ${res.status}`);
-      }
+      await updateCourse(course.courseId, {
+        name: form.name,
+        description: form.description,
+        defaultPrice: Number(form.price),
+        category: form.category,
+        level: form.level,
+      });
 
       setOpenEdit(false);
       await refreshCourse();
@@ -229,34 +197,22 @@ function CourseDetail() {
       return;
     }
 
-    const API_BASE = (import.meta.env?.VITE_API_BASE || "/api").replace(
-      /\/$/,
-      ""
-    );
-    const res = await fetch(`${API_BASE}/cart/addItem`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
+    try {
+      const res = await addItemToCart({
         userId: uid,
         productType: "Course",
         productId: course.courseId,
         occurrenceId: session.sessionId,
         qty: 1,
-      }),
-      credentials: "include",
-    });
+      });
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      alert(text || `Add to cart failed: ${res.status}`);
-      return;
+      if (res.success) {
+        setSuccessMsg("✅ Added to cart successfully!");
+        setTimeout(() => setSuccessMsg(""), 3000); // clear success message after 3s
+      }
+    } catch (err) {
+      alert(err.message || "Add to cart failed");
     }
-
-    setSuccessMsg("✅ Added to cart successfully!");
-    setTimeout(() => setSuccessMsg(""), 3000); // clear success message after 3s
   }
 
   // delete session (staff)

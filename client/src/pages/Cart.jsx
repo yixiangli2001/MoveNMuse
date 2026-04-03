@@ -2,7 +2,12 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { CheckoutBtn } from "../utils/index.jsx";
-import { api } from "../api";
+import {
+  getCartById,
+  removeCartItem,
+  removeMultipleCartItems,
+  updateCartItem,
+} from "../services/cartService";
 
 export default function CartPage() {
   const user = useSelector((state) => state.auth.userData);
@@ -26,7 +31,8 @@ export default function CartPage() {
     (async () => {
       try {
         setLoading(true);
-        const data = await api.getCartById(userId);
+        const res = await getCartById(userId);
+        const data = res.data || res;
         setCart(data);
         setProducts(
           (data.cartItems || []).map((i) => ({ ...i, isSelected: false }))
@@ -86,11 +92,12 @@ export default function CartPage() {
     try {
       setLoading(true);
 
-      const data = await api.removeCartItem({
+      const res = await removeCartItem({
         cartId: cart.cartId,
         itemId,
-      }); // expects { cart, message }
-      setCart(data.cart);
+      }); 
+      const data = res.data || res;
+      setCart(data);
       setProducts((prev) => prev.filter((p) => p.itemId !== itemId));
     } catch (e) {
       console.error("Failed to remove item", e);
@@ -108,11 +115,12 @@ export default function CartPage() {
         .filter((p) => p.isSelected)
         .map((p) => p.itemId);
 
-      const data = await api.removeMultipleCartItems({
+      const res = await removeMultipleCartItems({
         cartId: cart.cartId,
         itemIds: selectedIds,
       });
-      setCart(data.cart);
+      const data = res.data || res;
+      setCart(data);
       setProducts((prev) =>
         prev.filter((p) => !selectedIds.includes(p.itemId))
       );
@@ -146,13 +154,14 @@ export default function CartPage() {
     );
     // update backend
     try {
-      const data = await api.updateCartItem({
+      const res = await updateCartItem({
         cartId: cart.cartId,
         itemId,
         occurrenceId: occurrenceId,
       });
-      setCart(data.cart);
-      setProducts(data.cart.cartItems);
+      const data = res.data || res;
+      setCart(data);
+      setProducts(data.cartItems);
     } catch (e) {
       console.error("Failed to update occurrence", e);
     }

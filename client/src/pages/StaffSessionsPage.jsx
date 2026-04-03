@@ -15,8 +15,9 @@ export default function AdminSessionsPage() {
     setLoading(true);
     setErr("");
     try {
-      const data = await listSessions({ limit: 50 });
-      setSessions(data.items || []);
+      const res = await listSessions({ limit: 50 });
+      const result = res.data || res;
+      setSessions(result.items || []);
     } catch (e) {
       setErr(e.message || "Failed to load sessions");
     } finally {

@@ -2,7 +2,12 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import PaymentMethodForm from "../components/PaymentMethodForm.jsx";
-import { api } from "../api";
+import {
+  getPaymentDetails,
+  setDefaultPaymentDetail,
+  deletePaymentDetail,
+  addPaymentDetail
+} from "../services/paymentService";
 
 function CardSkeleton() {
   return (
@@ -27,19 +32,6 @@ export default function ManagePaymentMethods() {
   const [deletingId, setDeletingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // // API helpers (fallbacks if not on `api`)
-  // const setDefaultPaymentDetail = async ({ userId, paymentDetailId }) => {
-  //   if (api.setDefaultPaymentDetail) {
-  //     return api.setDefaultPaymentDetail({ userId, paymentDetailId });
-  //   }
-  //   const res = await fetch(`/api/paymentDetail/setDefault`, {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ userId, paymentDetailId }),
-  //   });
-  //   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  //   return res.json();
-  // };
   // load methods
   useEffect(() => {
     let aborted = false;
@@ -47,8 +39,9 @@ export default function ManagePaymentMethods() {
       try {
         setLoading(true);
         setErrorMsg("");
-        const data = await api.getPaymentDetails(userId);
+        const res = await getPaymentDetails(userId);
         if (aborted) return;
+        const data = res.data || res;
         const list = Array.isArray(data) ? data : data ? [data] : [];
         list.sort((a, b) => (b.isDefault === true) - (a.isDefault === true));
         setPaymentDetails(list);
@@ -68,7 +61,7 @@ export default function ManagePaymentMethods() {
     try {
       setSettingDefaultId(id);
       setErrorMsg("");
-      await api.setDefaultPaymentDetail({ userId, paymentDetailId: id });
+      await setDefaultPaymentDetail({ userId, paymentDetailId: id });
       setPaymentDetails((prev) =>
         prev
           .map((p) => ({ ...p, isDefault: p.paymentDetailId === id }))
@@ -86,7 +79,7 @@ export default function ManagePaymentMethods() {
     try {
       setDeletingId(id);
       setErrorMsg("");
-      await api.deletePaymentDetail(id);
+      await deletePaymentDetail(id);
       setPaymentDetails((prev) => prev.filter((p) => p.paymentDetailId !== id));
     } catch (e) {
       setErrorMsg(e.message || "Failed to delete card");
@@ -123,13 +116,8 @@ export default function ManagePaymentMethods() {
           <PaymentMethodForm
             onSubmit={async (payload) => {
               try {
-                const res = await fetch("/api/paymentDetail/addPaymentDetail", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ ...payload, userId }),
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const created = await res.json();
+                const res = await addPaymentDetail({ ...payload, userId });
+                const created = res.data;
                 setPaymentDetails((prev) =>
                   [created, ...prev].sort(
                     (a, b) => (b.isDefault === true) - (a.isDefault === true)

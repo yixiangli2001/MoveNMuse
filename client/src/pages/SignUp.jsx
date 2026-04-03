@@ -1,8 +1,7 @@
 // Marina
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api"; 
-
+import { registerUser } from "../services/authService";
 const SignUp = () => {
   const [form, setForm] = useState({
     firstName: "",
@@ -41,7 +40,7 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      await api.registerUser(form);
+      await registerUser(form);
       alert("Account created! You can now log in.");
       navigate("/login");
     } catch (err) {

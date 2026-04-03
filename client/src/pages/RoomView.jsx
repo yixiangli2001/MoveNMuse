@@ -1,6 +1,6 @@
 // Xinyi
 import { useEffect, useState, useMemo } from "react";
-import { fetchRooms } from "../api/room.js";
+import { fetchRooms } from "../services/roomService";
 import { Link } from "react-router-dom";
 
 export default function RoomView() {
@@ -16,7 +16,7 @@ export default function RoomView() {
 
     useEffect(() => {
         fetchRooms()
-        .then(setRooms)
+        .then((res) => setRooms(res.data || res))
         .catch((e) => setErr(e.message || "Failed"))
         .finally(() => setLoading(false));
     }, []);

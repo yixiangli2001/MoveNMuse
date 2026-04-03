@@ -21,8 +21,9 @@ export default function StaffInstructorsPage() {
     setLoading(true);
     setErr("");
     try {
-      const r = await listInstructors({ page: 1, pageSize: 100 });
-      const list = Array.isArray(r) ? r : r.items || [];
+      const res = await listInstructors({ page: 1, pageSize: 100 });
+      const result = res.data || res;
+      const list = Array.isArray(result) ? result : result.items || [];
       setItems(list);
     } catch (e) {
       setErr(e.message || "Failed to load instructors");

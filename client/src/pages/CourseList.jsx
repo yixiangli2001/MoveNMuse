@@ -40,8 +40,13 @@ export default function CourseList() {
       setErr("");
       try {
         const r = await listCourses({ kw, category, level, page, pageSize });
-        if (!dead)
-          setData({ items: r.items || [], total: Number(r.total) || 0 });
+        if (!dead) {
+          const result = r.data || r;
+          setData({ 
+            items: result.items || [], 
+            total: Number(result.total) || 0 
+          });
+        }
       } catch (e) {
         if (!dead) setErr(e.message || "Failed to load");
       } finally {

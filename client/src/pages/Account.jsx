@@ -2,7 +2,8 @@
 import { useSelector, useDispatch } from "react-redux";
 import { updateUser } from "../store/authSlice";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { getAccount, updateAccount } from "../services/userService";
+import { listBookingsByUser } from "../services/bookingService";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -49,17 +50,19 @@ const Account = () => {
   useEffect(() => {
     const fetchUserProfileAndBookings = async () => {
       try {
-        const res = await api.getAccount();
-        const user = res.user;
+        const res = await getAccount();
+        const user = res.data;
         if (!user?.userId) return;
 
         dispatch(updateUser(user));
         const userId = user.userId;
 
-        const bookingsRes = await fetch(
-          `/api/bookings?userId=${userId}&page=${currentPage}&limit=${limit}&sortBy=${sortOption}`
-        );
-        const data = await bookingsRes.json();
+        const resBookings = await listBookingsByUser(userId, {
+          page: currentPage,
+          limit: limit,
+          sortBy: sortOption
+        });
+        const data = resBookings.data;
 
         setBookings(data.bookings || []);
         setTotalBookings(data.total || 0);
@@ -129,8 +132,8 @@ const Account = () => {
     }
 
     try {
-      const updatedUser = await api.updateAccount(formData);
-      dispatch(updateUser(updatedUser.user));
+      const res = await updateAccount(formData);
+      dispatch(updateUser(res.data));
       setMessage("Account updated successfully!");
       setEditMode(false);
     } catch (error) {

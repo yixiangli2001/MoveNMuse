@@ -1,7 +1,7 @@
 // Marina
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api";
+import { changePassword } from "../services/authService";
 
 const ChangePassword = () => {
   const [form, setForm] = useState({ email: "", newPassword: "" });
@@ -27,7 +27,7 @@ const ChangePassword = () => {
 
     setLoading(true);
     try {
-        await api.changePassword(form);
+        await changePassword(form);
         setMessage("Password updated successfully! Redirecting to login...");
         setForm({ email: "", newPassword: "" });
 

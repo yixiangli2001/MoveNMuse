@@ -1,7 +1,10 @@
 // Marina
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api } from "../api";
+import { getBookingDetails } from "../services/bookingService";
+import { getCourseSession } from "../services/sessionService";
+import { getCourse } from "../services/courseService";
+import { getRoomSlotById } from "../services/roomService";
 
 const BookingDetails = () => {
   const { bookingId } = useParams();
@@ -12,7 +15,8 @@ const BookingDetails = () => {
   useEffect(() => {
     const fetchBookingWithDetails = async () => {
       try {
-        const bookingData = await api.getBookingDetails(bookingId);
+        const res = await getBookingDetails(bookingId);
+        const bookingData = res.data;
 
         const itemsWithDetails = await Promise.all(
           bookingData.items.map(async (item) => {
@@ -20,12 +24,14 @@ const BookingDetails = () => {
 
             try {
               if (item.productType === "Course") {
-                const session = await api.getCourseSession(item.occurrenceId);
+                const sessionRes = await getCourseSession(item.occurrenceId);
+                const session = sessionRes.data;
                 let courseName = "Unknown Course";
 
                 if (session?.courseId) {
                   try {
-                    const course = await api.getCourse(session.courseId);
+                    const courseRes = await getCourse(session.courseId);
+                    const course = courseRes.data;
                     courseName = course?.name || "Unknown Course";
                   } catch (err) {
                     console.warn("Failed to fetch course name:", err);
@@ -44,9 +50,9 @@ const BookingDetails = () => {
                   }
                 };
               } else if (item.productType === "Room") {
-                const res = await api.getRoomSlotById(item.occurrenceId);
-                const slotData = res.slot;
-                const roomData = res.room;
+                const resRoom = await getRoomSlotById(item.occurrenceId);
+                const slotData = resRoom.data.slot;
+                const roomData = resRoom.data.room;
 
                 return {
                   ...item,

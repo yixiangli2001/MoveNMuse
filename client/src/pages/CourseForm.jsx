@@ -109,10 +109,10 @@ export default function CourseForm() {
       };
 
       if (isEdit) {
-        await updateCourse(id, payload, token);
+        await updateCourse(id, payload);
         alert("Course updated.");
       } else {
-        await createCourse(payload, token);
+        await createCourse(payload);
         alert("Course created.");
       }
 

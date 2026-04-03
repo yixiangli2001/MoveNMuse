@@ -1,9 +1,9 @@
 // Marina
-import React, { useState } from "react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { login as setUser } from "../../store/authSlice"; 
 import { useNavigate, useLocation } from "react-router-dom"; 
-import { api } from "../../api"; 
+import { login } from "../../services/authService";
 import { useAuth } from "../../components/auth/AuthContext.jsx";
 import { jwtDecode } from "jwt-decode";
 
@@ -25,7 +25,8 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const data = await api.login({ email, password });
+      const res = await login({ email, password });
+      const data = res.data || res;
 
       localStorage.setItem("token", data.token);
       authLogin(data.token);
@@ -108,7 +109,7 @@ export default function Login() {
           </label>
           <br></br>
           <label className="text-sm text-gray-700">
-            Don't have an account yet? Sign up {" "}
+            Don&apos;t have an account yet? Sign up {" "}
             <span
               onClick={() => navigate("/signUp")}
               className="text-blue-600 cursor-pointer hover:underline"

@@ -23,9 +23,10 @@ export default function StaffCoursesPage() {
     setLoading(true);
     setErr("");
     try {
-      const data = await listCourses({ limit: 200, sort: "-createdAt" });
+      const res = await listCourses({ limit: 200, sort: "-createdAt" });
+      const result = res.data || res;
       // handle both array and paginated response
-      const list = Array.isArray(data) ? data : data.items || [];
+      const list = Array.isArray(result) ? result : result.items || [];
       setItems(list); // set course items
     } catch (e) {
       setErr(e.message || "Failed to load courses");
@@ -41,12 +42,11 @@ export default function StaffCoursesPage() {
   async function handleDelete(courseId) {
     if (!confirm(`Delete course ${courseId}? This cannot be undone.`)) return;
     try {
-      const token = getToken?.();
-      if (!token || !isStaff) {
+      if (!isStaff) {
         alert("Only staff can delete courses.");
         return;
       }
-      await deleteCourse(courseId, token);
+      await deleteCourse(courseId);
       // locally remove the deleted course from the list
       setItems((prev) =>
         prev.filter(

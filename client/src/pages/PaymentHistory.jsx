@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
-import { api } from "../api";
+import { getPaymentHistoryById, getAllPaymentHistory } from "../services/paymentService";
 
 export default function PaymentHistory() {
   const user = useSelector((state) => state.auth.userData);
@@ -17,12 +17,12 @@ export default function PaymentHistory() {
     (async () => {
       try {
         if (user.role == "customer") {
-          const data = await api.getPaymentHistoryById(userId);
-          setPaymentHistory(data);
+          const res = await getPaymentHistoryById(userId);
+          setPaymentHistory(res.data || res);
         }
         if (user.role == "staff" || user.role == "admin") {
-          const data = await api.getAllPaymentHistory();
-          setPaymentHistory(data);
+          const res = await getAllPaymentHistory();
+          setPaymentHistory(res.data || res);
         }
       } catch (e) {
         console.error("Failed to fetch payment history", e);
