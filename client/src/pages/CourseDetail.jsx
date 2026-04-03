@@ -1,6 +1,6 @@
 // Jiayu
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 
 // services
 import { getCourse, updateCourse } from "../services/courseService";
@@ -29,7 +29,7 @@ const normPrice = (p) => {
 };
 const getCoursePrice = (c) => normPrice(c?.defaultPrice ?? c?.price);
 // predefined options
-const CATEGORY_OPTIONS = ["Dance", "Yoga", "Workshop"];
+const CATEGORY_OPTIONS = ["Dance", "Yoga", "Workshop", "Music"];
 const LEVEL_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 
 function CourseDetail() {
@@ -159,7 +159,7 @@ function CourseDetail() {
         setVErr({});
       }
 
-      if (!token || !isStaff) {
+      if (!isStaff) {
         alert("Only staff can edit courses.");
         return;
       }
@@ -183,12 +183,10 @@ function CourseDetail() {
 
   // add session to cart (customer)
   async function onAddToCart(session) {
-    const token = getToken?.();
     const uid = getUserIdFromToken?.();
-    const role = (getRoleFromToken?.() || "").toLowerCase();
-    if (!token || !uid) {
+    if (!uid) {
       setTip("Please log in to add sessions to your cart.");
-      nav("/login");
+      nav("/login", { state: { from: location } });
       return;
     }
     if (role !== "customer") {
@@ -208,7 +206,7 @@ function CourseDetail() {
 
       if (res.success) {
         setSuccessMsg("✅ Added to cart successfully!");
-        setTimeout(() => setSuccessMsg(""), 3000); // clear success message after 3s
+        setTimeout(() => setSuccessMsg(""), 3000); 
       }
     } catch (err) {
       alert(err.message || "Add to cart failed");
@@ -218,8 +216,7 @@ function CourseDetail() {
   // delete session (staff)
   async function handleDeleteSession(sessionId) {
     try {
-      const token = getToken?.();
-      if (!token || !isStaff) {
+      if (!isStaff) {
         alert("Only staff can delete sessions.");
         return;
       }
@@ -249,285 +246,250 @@ function CourseDetail() {
     nav(`/admin/instructors?return=${ret}`);
   }
 
-  if (loading) return <div className="p-4 text-gray-600">Loading course…</div>;
+  if (loading) return <div className="p-20 text-center animate-pulse font-display text-2xl text-neutral-400">Curating details...</div>;
 
   if (err)
     return (
-      <div className="p-4 text-red-600">
-        {err}
-        <div>
-          <button
-            className="mt-2 rounded-lg border px-3 py-1 text-sm"
-            onClick={() => nav(-1)}
-          >
-            Back
-          </button>
-        </div>
+      <div className="p-20 text-center space-y-4">
+        <p className="text-red-600 font-medium">{err}</p>
+        <button
+          className="px-6 py-2 rounded-full border border-neutral-200 text-sm hover:bg-neutral-50"
+          onClick={() => nav(-1)}
+        >
+          Return to Library
+        </button>
       </div>
     );
 
-  if (!course) return <div className="p-4">Course not found</div>;
+  if (!course) return <div className="p-20 text-center italic text-neutral-400">The requested course has moved on.</div>;
 
   return (
-    <div className="mx-auto max-w-4xl p-4">
-      <button
-        className="mb-3 rounded-lg border px-3 py-1 text-sm"
-        onClick={() => nav(-1)}
-      >
-        ← Back
-      </button>
-      {/* page-level tip message */}
+    <div className="max-w-7xl mx-auto p-6 pt-32 space-y-16">
+      {/* Breadcrumb / Back */}
+      <div className="reveal-up">
+        <button
+          className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-blue-600 transition-colors"
+          onClick={() => nav("/courses")}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back to Library
+        </button>
+      </div>
 
-      {tip && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
-          {tip}
-        </div>
-      )}
-
-      {/* success message */}
-      {successMsg && (
-        <div className="mb-3 rounded-lg border border-green-200 bg-green-50 text-green-800 text-sm px-3 py-2 flex items-center gap-3">
-          <span>{successMsg}</span>
-          <button
-            className="ml-auto rounded border px-3 py-1 text-sm"
-            onClick={() => nav("/cart")}
-          >
-            View cart
-          </button>
-        </div>
-      )}
-
-      {/* only visible for staff */}
-      {isStaff && (
-        <div className="mb-4 rounded-lg border p-3 bg-amber-50 text-amber-900">
-          <div className="font-semibold mb-2">Staff Tools</div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="rounded border px-3 py-1 text-sm"
-              onClick={openEditModal}
-            >
-              ✏️ Edit Course Info
-            </button>
-            {/* NEW: Manage Instructors */}
-            <button
-              className="rounded border px-3 py-1 text-sm"
-              onClick={goManageInstructors}
-              title="Go to instructor admin"
-            >
-              👤 Manage Instructors
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* course image */}
-      <div className="flex items-start gap-4">
-        <div className="w-44 h-44 rounded-xl bg-gray-100 grid place-items-center text-sm text-gray-400">
-          No Image
-        </div>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">
-            {course.name || course.title || `Course ${id}`}
-          </h1>
-          <p className="text-sm text-gray-700 mt-2 leading-relaxed">
-            {course.description}
-          </p>
-          <div className="mt-3 text-xs text-gray-500 flex flex-wrap items-center gap-2">
-            {course.category && (
-              <span className="rounded-full border px-2 py-0.5">
+      {/* Hero Content */}
+      <div className="grid lg:grid-cols-2 gap-16 items-start reveal-up" style={{ animationDelay: "100ms" }}>
+        {/* Left: Visual / Info */}
+        <div className="space-y-10">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                 {course.category}
               </span>
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-neutral-400 border border-neutral-200 px-3 py-1 rounded-full">
+                {course.level}
+              </span>
+            </div>
+            <h1 className="text-6xl font-display font-light leading-tight text-neutral-900">
+              {course.name || course.title}
+            </h1>
+          </div>
+
+          <div className="prose prose-neutral max-w-none">
+            <p className="text-xl text-neutral-500 font-light leading-relaxed">
+              {course.description}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-12 py-8 border-y border-neutral-100">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Investment</span>
+              <div className="text-3xl font-medium text-neutral-900">{money(getCoursePrice(course))}</div>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Duration</span>
+              <div className="text-3xl font-medium text-neutral-900">Multi-session</div>
+            </div>
+          </div>
+
+          {/* Action Messages */}
+          <div className="space-y-4">
+            {tip && (
+              <div className="rounded-2xl border border-red-100 bg-red-50 text-red-700 text-sm px-6 py-4 flex items-center gap-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                {tip}
+              </div>
             )}
-            {course.level && <span>{course.level}</span>}
-            <span>Price {money(getCoursePrice(course))}</span>
+            {successMsg && (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 text-blue-700 text-sm px-6 py-4 flex items-center gap-4 animate-slide-down">
+                <span className="font-medium">{successMsg}</span>
+                <Link to="/cart" className="ml-auto text-blue-600 font-bold hover:underline">
+                  View Shopping Cart &rarr;
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Sessions / Management */}
+        <div className="space-y-8 h-fit lg:sticky lg:top-32">
+          {/* Staff Tools Card */}
+          {isStaff && (
+            <div className="glass rounded-[2rem] p-8 space-y-6 shadow-xl shadow-neutral-900/5 border-amber-100">
+              <div className="flex items-center gap-3 text-amber-800">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 12 10z"></path></svg>
+                <h3 className="font-bold uppercase tracking-widest text-xs">Curator Controls</h3>
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className="flex-1 px-6 py-3 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-all shadow-sm"
+                  onClick={openEditModal}
+                >
+                  Edit Collection
+                </button>
+                <button
+                  className="flex-1 px-6 py-3 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-all shadow-sm"
+                  onClick={goManageInstructors}
+                >
+                  Instructors
+                </button>
+              </div>
+              <button
+                className="w-full px-6 py-3 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-blue-600 transition-all shadow-lg"
+                onClick={goCreateSession}
+              >
+                + New Masterclass Session
+              </button>
+            </div>
+          )}
+
+          {/* Sessions List */}
+          <div className="bg-white rounded-[2rem] p-8 shadow-xl shadow-neutral-900/5 border border-neutral-100">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-display font-medium text-neutral-900">Available Sessions</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                {sessionsUpcoming.length} Upcoming
+              </span>
+            </div>
+
+            <div className="space-y-6">
+              {isStaff ? (
+                <SessionTable
+                  sessions={sessionsAll}
+                  onDelete={handleDeleteSession}
+                />
+              ) : (
+                <SessionList
+                  sessions={sessionsUpcoming}
+                  onAddToCart={onAddToCart}
+                  canBook={canBook}
+                  role={role || null}
+                />
+              )}
+              
+              {!isStaff && sessionsUpcoming.length === 0 && (
+                <div className="py-12 text-center text-neutral-400 italic">
+                  No upcoming dates for this curation.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      {/* customer hints */}
-      {!isStaff && (
-        <div className="mt-4">
-          {!getToken?.() && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 text-blue-800 text-sm px-3 py-2">
-              Please{" "}
-              <button className="underline" onClick={() => nav("/login")}>
-                log in
-              </button>{" "}
-              to book a session.
-            </div>
-          )}
-          {getToken?.() && role !== "customer" && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-sm px-3 py-2 mt-2">
-              Booking is available to customers. Your role is “{role}”.
-            </div>
-          )}
-          {Array.isArray(sessionsUpcoming) && sessionsUpcoming.length === 0 && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 text-gray-600 text-sm px-3 py-2 mt-2">
-              No upcoming sessions yet. Please check back later.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* customer view: only visible to non-staff */}
-      {!isStaff && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold">Sessions</h2>
-          <div className="mt-3">
-            <SessionList
-              sessions={sessionsUpcoming} // customer only sees upcoming
-              onAddToCart={onAddToCart}
-              canBook={canBook}
-              role={role || null}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Staff management area (only visible to staff): shows all sessions for this course */}
-      {isStaff && (
-        <section className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              Manage Sessions (this course)
-            </h2>
-            <button
-              className="rounded bg-black text-white px-3 py-1 text-sm"
-              onClick={goCreateSession}
-            >
-              ＋ New Session
-            </button>
-          </div>
-          <p className="mt-1 text-sm text-gray-600">
-            Only visible to staff. All sessions (including past/cancelled) for
-            this course.
-          </p>
-
-          {Array.isArray(sessionsAll) && sessionsAll.length === 0 && (
-            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-sm px-3 py-2">
-              No sessions found for this course. Click “＋ New Session” to
-              create one.
-            </div>
-          )}
-
-          <div className="mt-3">
-            <SessionTable
-              sessions={sessionsAll} // staff sees all
-              onDelete={handleDeleteSession}
-              // Edit button in SessionTable should navigate to /admin/sessions/:id/edit
-            />
-          </div>
-        </section>
-      )}
 
       {/* Edit Course Modal */}
       {openEdit && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40">
-          <div className="w-full max-w-xl rounded-xl bg-white p-4 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Edit Course</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setOpenEdit(false)} />
+          
+          <div className="relative w-full max-w-2xl bg-white rounded-[3rem] p-10 shadow-2xl animate-zoom-in">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-3xl font-display">Edit <span className="italic">Collection</span></h3>
               <button
-                className="text-sm opacity-70"
+                className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
                 onClick={() => setOpenEdit(false)}
               >
-                ✕
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="col-span-2 text-sm">
-                <span className="block mb-1">Name</span>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 ml-4">Title</label>
                 <input
-                  className="w-full rounded border px-2 py-1"
+                  className="w-full rounded-2xl border border-neutral-200 px-6 py-3 text-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 />
-                {vErr.name && (
-                  <div className="mt-1 text-xs text-red-600">{vErr.name}</div>
-                )}
-              </label>
+                {vErr.name && <div className="text-[10px] text-red-500 font-bold ml-4 uppercase">{vErr.name}</div>}
+              </div>
 
-              <label className="col-span-2 text-sm">
-                <span className="block mb-1">Description</span>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 ml-4">Description</label>
                 <textarea
-                  className="w-full rounded border px-2 py-1"
+                  className="w-full rounded-2xl border border-neutral-200 px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   rows={4}
                   value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
-              </label>
+              </div>
 
-              <label className="text-sm">
-                <span className="block mb-1">Price (AUD)</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full rounded border px-2 py-1"
-                  value={form.price}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, price: e.target.value }))
-                  }
-                />
-                {vErr.price && (
-                  <div className="mt-1 text-xs text-red-600">{vErr.price}</div>
-                )}
-              </label>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 ml-4">Rate (AUD)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full rounded-2xl border border-neutral-200 px-6 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    value={form.price}
+                    onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                  />
+                  {vErr.price && <div className="text-[10px] text-red-500 font-bold ml-4 uppercase">{vErr.price}</div>}
+                </div>
 
-              <label className="text-sm">
-                <span className="block mb-1">Category</span>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 ml-4">Discipline</label>
+                  <select
+                    className="w-full rounded-2xl border border-neutral-200 px-6 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none bg-white"
+                    value={form.category}
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                  >
+                    <option value="">-- Select Category --</option>
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 ml-4">Proficiency</label>
                 <select
-                  className="w-full rounded border px-2 py-1"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, category: e.target.value }))
-                  }
-                  required
-                >
-                  <option value="">-- Select Category --</option>
-                  {CATEGORY_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-sm">
-                <span className="block mb-1">Level</span>
-                <select
-                  className="w-full rounded border px-2 py-1"
+                  className="w-full rounded-2xl border border-neutral-200 px-6 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none bg-white"
                   value={form.level}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, level: e.target.value }))
-                  }
-                  required
+                  onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
                 >
                   <option value="">-- Select Level --</option>
                   {LEVEL_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
+                    <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
-              </label>
+              </div>
             </div>
 
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-10 flex gap-4">
               <button
-                className="rounded border px-3 py-1 text-sm"
+                className="flex-1 px-8 py-4 rounded-full border border-neutral-200 text-sm font-bold text-neutral-600 hover:bg-neutral-50 transition-all"
                 onClick={() => setOpenEdit(false)}
               >
-                Cancel
+                Discard
               </button>
               <button
-                className="rounded bg-black text-white px-3 py-1 text-sm disabled:opacity-50"
+                className="flex-[2] px-8 py-4 rounded-full bg-neutral-900 text-white text-sm font-bold hover:bg-blue-600 transition-all shadow-lg disabled:opacity-50"
                 onClick={onSaveCourse}
                 disabled={saving}
               >
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Preserving..." : "Save Changes"}
               </button>
             </div>
           </div>

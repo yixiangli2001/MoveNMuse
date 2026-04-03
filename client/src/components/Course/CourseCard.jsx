@@ -11,33 +11,53 @@ const money = (n) =>
 // CourseCard component to display course information
 export default function CourseCard({ c }) {
   return (
-    <li className="rounded-2xl border p-4 shadow-sm hover:shadow-md transition-all">
-      <h3 className="text-lg font-semibold">{c.name}</h3>
-      <p className="text-sm text-gray-600 line-clamp-2 mt-1">{c.description}</p>
+    <div className="dynamic-card overflow-hidden group">
+      {/* Visual Header / Image placeholder would go here if available */}
+      <div className="p-8 space-y-6">
+        <div className="space-y-2">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-blue-600 bg-blue-50 px-2 py-1 rounded">
+              {c.category || "General"}
+            </span>
+            {c.lowCapacity && (
+              <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-red-600">
+                Limited
+              </span>
+            )}
+          </div>
+          <h3 className="text-2xl font-display font-medium text-neutral-900 group-hover:text-blue-600 transition-colors">
+            {c.name}
+          </h3>
+        </div>
 
-      <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-2">
-        {c.category && (
-          <span className="rounded-full border px-2 py-0.5">{c.category}</span>
-        )}
-        {c.level && <span>{c.level}</span>}
-        <span>{money(c.price)}</span>
+        <p className="text-neutral-500 font-light leading-relaxed line-clamp-3 text-sm">
+          {c.description}
+        </p>
+
+        <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-xs text-neutral-400 uppercase tracking-widest">Investment</span>
+            <span className="text-lg font-medium text-neutral-900">{money(c.price)}</span>
+          </div>
+          
+          <Link
+            className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors"
+            to={`/courses/${c.courseId}`}
+          >
+            <span>Details</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:translate-x-1">
+              <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+        </div>
+        
         {c.nextStartTime && (
-          <span>Next Start {new Date(c.nextStartTime).toLocaleString()}</span>
+          <div className="text-[10px] text-neutral-400 italic">
+            Next session: {new Date(c.nextStartTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </div>
         )}
       </div>
-
-      <div className="mt-3 flex items-center gap-2">
-        <Link
-          className="inline-block rounded-xl border px-3 py-1 text-sm hover:bg-gray-50"
-          to={`/courses/${c.courseId}`}
-        >
-          View Details
-        </Link>
-        {c.lowCapacity && (
-          <span className="text-xs text-red-600">Limited Spots</span>
-        )}
-      </div>
-    </li>
+    </div>
   );
 }
 
