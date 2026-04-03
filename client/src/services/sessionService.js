@@ -1,50 +1,47 @@
-// Jiayu
-import { api } from "../api/api";   
+import axiosClient from "../api/axiosClient";
 
 const BASE = "/course-sessions";
 
-// columnlist support filtering/pagination:
-export function listSessions({ limit = 50, courseId } = {}) {
-  const params = new URLSearchParams();
-  params.set("limit", String(limit));
-  if (courseId !== undefined && courseId !== null && `${courseId}` !== "") {
-    params.set("courseId", String(courseId));
-  }
-  return api.get(`${BASE}?${params.toString()}`);
+// support filtering/pagination
+export function listSessions(params = {}) {
+  return axiosClient.get(BASE, { params });
 }
 
 // detail
 export function getSession(id) {
-  return api.get(`${BASE}/${id}`);
+  return axiosClient.get(`${BASE}/${id}`);
+}
+
+export function getCourseSession(sessionId) {
+  if (!sessionId) throw new Error("Invalid session ID");
+  return axiosClient.get(`${BASE}/${sessionId}`);
 }
 
 // by course
 export function getSessionsByCourse(courseId) {
-  return api.get(`${BASE}/course/${courseId}`);
+  return axiosClient.get(`${BASE}/course/${courseId}`);
 }
 
-// Staff：create
+// Staff: create
 export function createSession(payload) {
-  return api.post(BASE, payload);
+  return axiosClient.post(BASE, payload);
 }
 
-// Staff：update
+// Staff: update
 export function updateSession(id, payload) {
-  return api.patch(`${BASE}/${id}`, payload);
+  return axiosClient.patch(`${BASE}/${id}`, payload);
 }
 
-// Staff：delete
+// Staff: delete
 export function deleteSession(id) {
-  return api.del(`${BASE}/${id}`);
+  return axiosClient.delete(`${BASE}/${id}`);
 }
 
 // Book a seat
 export function bookSeat(id) {
-  return api.post(`${BASE}/${id}/book`);
+  return axiosClient.post(`${BASE}/${id}/book`);
 }
+
 export function cancelSeat(id) {
-  return api.post(`${BASE}/${id}/cancel`);
+  return axiosClient.post(`${BASE}/${id}/cancel`);
 }
-
-
-
