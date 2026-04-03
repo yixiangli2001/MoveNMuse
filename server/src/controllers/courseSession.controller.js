@@ -1,7 +1,10 @@
 // Jiayu
 import mongoose from "mongoose";
 import { CourseSession } from "../models/courseSession.model.js";
-import { Instructor } from "../models/instructor.model.js";
+import Instructor from "../models/instructor.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
 // helper to build match object by id (ObjectId or numeric sessionId)
 function buildIdMatch(id) {
@@ -35,8 +38,7 @@ const AGG_KEEP_ACTIVE_INSTRUCTOR = [
 ];
 
 // GET /api/course-sessions
-export const listCourseSessions = async (req, res) => {
-  try {
+export const listCourseSessions = asyncHandler(async (req, res) => {
     let {
       courseId,
       instructorId,
@@ -94,19 +96,14 @@ export const listCourseSessions = async (req, res) => {
     ]);
     // extract total count
     const total = totalArr?.[0]?.total || 0;
-    res.json({ total, page, pageSize: limit, items });
-  } catch (e) {
-    console.error("listCourseSessions error:", e);
-    res.status(500).json({ error: e.message || "Server error" });
-  }
-};
+    return res.status(200).json(new ApiResponse(200, { total, page, pageSize: limit, items }, "Course sessions fetched successfully"));
+});
 
 //only list by courseId without pagination with active instructor
-export const listByCourseId = async (req, res) => {
-  try {
+export const listByCourseId = asyncHandler(async (req, res) => {
     const n = Number(req.params.courseId);
     if (!Number.isFinite(n))
-      return res.status(400).json({ error: "Invalid courseId" });
+      throw new ApiError(400, "Invalid courseId");
 
     const items = await CourseSession.aggregate([
       { $match: { courseId: n } },
@@ -114,37 +111,27 @@ export const listByCourseId = async (req, res) => {
       ...AGG_KEEP_ACTIVE_INSTRUCTOR,
     ]);
 
-    res.json(items);
-  } catch (e) {
-    console.error("listByCourseId error:", e);
-    res.status(500).json({ error: e.message || "Server error" });
-  }
-};
+    return res.status(200).json(new ApiResponse(200, items, "Course sessions fetched successfully"));
+});
 
 //if by id, return single item with active instructor
-export const getCourseSession = async (req, res) => {
-  try {
+export const getCourseSession = asyncHandler(async (req, res) => {
     const match = buildIdMatch(req.params.id);
     if (!match)
-      return res.status(404).json({ error: "CourseSession not found" });
+      throw new ApiError(404, "CourseSession not found");
 
     const rows = await CourseSession.aggregate([
       { $match: match },
       ...AGG_KEEP_ACTIVE_INSTRUCTOR,
     ]);
     const doc = rows?.[0];
-    if (!doc) return res.status(404).json({ error: "CourseSession not found" });
+    if (!doc) throw new ApiError(404, "CourseSession not found");
 
-    res.json(doc);
-  } catch (e) {
-    console.error("getCourseSession error:", e);
-    res.status(500).json({ error: e.message || "Server error" });
-  }
-};
+    return res.status(200).json(new ApiResponse(200, doc, "Course session fetched successfully"));
+});
 
 // only staff can create course sessions
-export const createCourseSession = async (req, res) => {
-  try {
+export const createCourseSession = asyncHandler(async (req, res) => {
     const {
       sessionId,
       courseId,
@@ -160,12 +147,10 @@ export const createCourseSession = async (req, res) => {
     } = req.body || {};
 
     if (!Number.isFinite(Number(courseId))) {
-      return res.status(400).json({ error: "courseId is required (number)" });
+      throw new ApiError(400, "courseId is required (number)");
     }
     if (!Number.isFinite(Number(instructorId))) {
-      return res
-        .status(400)
-        .json({ error: "instructorId is required (number)" });
+      throw new ApiError(400, "instructorId is required (number)");
     }
 
     // instructor must be active
@@ -176,9 +161,7 @@ export const createCourseSession = async (req, res) => {
       .select("instructorId status")
       .lean();
     if (!inst)
-      return res
-        .status(400)
-        .json({ error: "Instructor is not active or does not exist" });
+      throw new ApiError(400, "Instructor is not active or does not exist");
 
     const st = new Date(startTime);
     const et = new Date(endTime);
@@ -189,20 +172,20 @@ export const createCourseSession = async (req, res) => {
       : computed;
 
     if (!Number.isFinite(duration) || duration < 1) {
-      return res.status(400).json({ error: "duration must be >= 1 (minutes)" });
+      throw new ApiError(400, "duration must be >= 1 (minutes)");
     }
 
     // validate startTime and endTime
     if (!(st instanceof Date) || isNaN(st))
-      return res.status(400).json({ error: "Invalid startTime" });
+      throw new ApiError(400, "Invalid startTime");
     if (!(et instanceof Date) || isNaN(et))
-      return res.status(400).json({ error: "Invalid endTime" });
+      throw new ApiError(400, "Invalid endTime");
     if (et <= st)
-      return res.status(400).json({ error: "endTime must be after startTime" });
+      throw new ApiError(400, "endTime must be after startTime");
     // validate capacity
     const cap = Number(capacity);
     if (!Number.isFinite(cap) || cap < 0)
-      return res.status(400).json({ error: "capacity must be >= 0" });
+      throw new ApiError(400, "capacity must be >= 0");
     // validate price
     const priceNum = Number(
       typeof price === "object" && price?.$numberDecimal != null
@@ -210,9 +193,7 @@ export const createCourseSession = async (req, res) => {
         : price
     );
     if (!Number.isFinite(priceNum) || priceNum < 0) {
-      return res
-        .status(400)
-        .json({ error: "price must be a non-negative number" });
+      throw new ApiError(400, "price must be a non-negative number");
     }
 
     // auto-increment sessionId if not provided or invalid
@@ -240,19 +221,14 @@ export const createCourseSession = async (req, res) => {
       notes,
     });
     // respond with created document
-    res.status(201).json({ message: "Session created", item: doc });
-  } catch (e) {
-    console.error("createCourseSession error:", e);
-    res.status(400).json({ error: e.message || "Bad request" });
-  }
-};
+    return res.status(201).json(new ApiResponse(201, doc, "Session created successfully"));
+});
 
 // get by id with active instructor
-export const updateCourseSession = async (req, res) => {
-  try {
+export const updateCourseSession = asyncHandler(async (req, res) => {
     const match = buildIdMatch(req.params.id);
     if (!match)
-      return res.status(404).json({ error: "CourseSession not found" });
+      throw new ApiError(404, "CourseSession not found");
 
     const payload = { ...req.body };
 
@@ -260,7 +236,7 @@ export const updateCourseSession = async (req, res) => {
     if (payload.instructorId !== undefined) {
       const newInstId = Number(payload.instructorId);
       if (!Number.isFinite(newInstId)) {
-        return res.status(400).json({ error: "instructorId must be a number" });
+        throw new ApiError(400, "instructorId must be a number");
       }
       const inst = await Instructor.findOne({
         instructorId: newInstId,
@@ -269,9 +245,7 @@ export const updateCourseSession = async (req, res) => {
         .select("instructorId status")
         .lean();
       if (!inst) {
-        return res
-          .status(400)
-          .json({ error: "Instructor is not active or does not exist" });
+        throw new ApiError(400, "Instructor is not active or does not exist");
       }
     }
 
@@ -279,41 +253,37 @@ export const updateCourseSession = async (req, res) => {
     if (payload.startTime) {
       const st = new Date(payload.startTime);
       if (!(st instanceof Date) || isNaN(st))
-        return res.status(400).json({ error: "Invalid startTime" });
+        throw new ApiError(400, "Invalid startTime");
     }
     if (payload.endTime) {
       const et = new Date(payload.endTime);
       if (!(et instanceof Date) || isNaN(et))
-        return res.status(400).json({ error: "Invalid endTime" });
+        throw new ApiError(400, "Invalid endTime");
     }
     if (payload.startTime && payload.endTime) {
       const st = new Date(payload.startTime);
       const et = new Date(payload.endTime);
       if (et <= st)
-        return res
-          .status(400)
-          .json({ error: "endTime must be after startTime" });
+        throw new ApiError(400, "endTime must be after startTime");
     }
     // validate capacity
     if (payload.capacity !== undefined) {
       const cap = Number(payload.capacity);
       if (!Number.isFinite(cap) || cap < 0) {
-        return res.status(400).json({ error: "capacity must be >= 0" });
+        throw new ApiError(400, "capacity must be >= 0");
       }
     }
     // validate seatsBooked
     if (payload.seatsBooked !== undefined) {
       const sb = Number(payload.seatsBooked);
       if (!Number.isFinite(sb) || sb < 0) {
-        return res.status(400).json({ error: "seatsBooked must be >= 0" });
+        throw new ApiError(400, "seatsBooked must be >= 0");
       }
       const cur = await CourseSession.findOne(match).select("capacity").lean();
       if (!cur)
-        return res.status(404).json({ error: "CourseSession not found" });
+        throw new ApiError(404, "CourseSession not found");
       if (sb > cur.capacity) {
-        return res
-          .status(400)
-          .json({ error: "seatsBooked cannot exceed capacity" });
+        throw new ApiError(400, "seatsBooked cannot exceed capacity");
       }
     }
     // validate price
@@ -324,9 +294,7 @@ export const updateCourseSession = async (req, res) => {
           ? Number(payload.price.$numberDecimal)
           : Number(payload.price);
       if (!Number.isFinite(priceNum) || priceNum < 0) {
-        return res
-          .status(400)
-          .json({ error: "price must be a non-negative number" });
+        throw new ApiError(400, "price must be a non-negative number");
       }
       payload.price = priceNum;
     }
@@ -337,44 +305,33 @@ export const updateCourseSession = async (req, res) => {
       { new: true }
     ).lean();
     if (!updated)
-      return res.status(404).json({ error: "CourseSession not found" });
+      throw new ApiError(404, "CourseSession not found");
 
-    res.json({ message: "Session updated", item: updated });
-  } catch (e) {
-    console.error("updateCourseSession error:", e);
-    res.status(400).json({ error: e.message || "Bad request" });
-  }
-};
+    return res.status(200).json(new ApiResponse(200, updated, "Session updated successfully"));
+});
 
 // delete by id
-export const deleteCourseSession = async (req, res) => {
-  try {
+export const deleteCourseSession = asyncHandler(async (req, res) => {
     const match = buildIdMatch(req.params.id);
     if (!match)
-      return res.status(404).json({ error: "CourseSession not found" });
+      throw new ApiError(404, "CourseSession not found");
 
     const del = await CourseSession.findOneAndDelete(match).lean();
-    if (!del) return res.status(404).json({ error: "CourseSession not found" });
+    if (!del) throw new ApiError(404, "CourseSession not found");
 
-    res.json({ message: "Session deleted" });
-  } catch (e) {
-    console.error("deleteCourseSession error:", e);
-    res.status(500).json({ error: e.message || "Server error" });
-  }
-};
+    return res.status(200).json(new ApiResponse(200, null, "Session deleted successfully"));
+});
 
-// delete by id
-export const bookSeat = async (req, res) => {
-  try {
+export const bookSeat = asyncHandler(async (req, res) => {
     const match = buildIdMatch(req.params.id);
     if (!match)
-      return res.status(404).json({ error: "CourseSession not found" });
+      throw new ApiError(404, "CourseSession not found");
 
     // check active instructor
     const s = await CourseSession.findOne(match)
       .select("instructorId capacity seatsBooked status")
       .lean();
-    if (!s) return res.status(404).json({ error: "CourseSession not found" });
+    if (!s) throw new ApiError(404, "CourseSession not found");
 
     const inst = await Instructor.findOne({
       instructorId: s.instructorId,
@@ -382,7 +339,7 @@ export const bookSeat = async (req, res) => {
     })
       .select("_id")
       .lean();
-    if (!inst) return res.status(409).json({ error: "Instructor inactive" });
+    if (!inst) throw new ApiError(409, "Instructor inactive");
 
     // only book if seats available and status is Scheduled
     const updated = await CourseSession.findOneAndUpdate(
@@ -396,25 +353,19 @@ export const bookSeat = async (req, res) => {
     ).lean();
 
     if (!updated)
-      return res.status(409).json({ error: "Session full or not schedulable" });
-    res.json({ message: "Seat booked", item: updated });
-  } catch (e) {
-    console.error("bookSeat error:", e);
-    res.status(500).json({ error: e.message || "Server error" });
-  }
-};
+      throw new ApiError(409, "Session full or not schedulable");
+    return res.status(200).json(new ApiResponse(200, updated, "Seat booked successfully"));
+});
 
-// delete by id
-export const cancelSeat = async (req, res) => {
-  try {
+export const cancelSeat = asyncHandler(async (req, res) => {
     const match = buildIdMatch(req.params.id);
     if (!match)
-      return res.status(404).json({ error: "CourseSession not found" });
+      throw new ApiError(404, "CourseSession not found");
 
     const s = await CourseSession.findOne(match)
       .select("instructorId seatsBooked status")
       .lean();
-    if (!s) return res.status(404).json({ error: "CourseSession not found" });
+    if (!s) throw new ApiError(404, "CourseSession not found");
 
     const inst = await Instructor.findOne({
       instructorId: s.instructorId,
@@ -422,7 +373,7 @@ export const cancelSeat = async (req, res) => {
     })
       .select("_id")
       .lean();
-    if (!inst) return res.status(409).json({ error: "Instructor inactive" });
+    if (!inst) throw new ApiError(409, "Instructor inactive");
     // only cancel if seatsBooked > 0 and status is Scheduled
     const updated = await CourseSession.findOneAndUpdate(
       { ...match, status: "Scheduled", seatsBooked: { $gt: 0 } },
@@ -431,12 +382,6 @@ export const cancelSeat = async (req, res) => {
     ).lean();
 
     if (!updated)
-      return res
-        .status(409)
-        .json({ error: "No seats to release or status not schedulable" });
-    res.json({ message: "Seat released", item: updated });
-  } catch (e) {
-    console.error("cancelSeat error:", e);
-    res.status(500).json({ error: e.message || "Server error" });
-  }
-};
+      throw new ApiError(409, "No seats to release or status not schedulable");
+    return res.status(200).json(new ApiResponse(200, updated, "Seat released successfully"));
+});

@@ -1,18 +1,20 @@
 // Marina
 import User from '../models/user.model.js';
 import { getNextUserId } from '../utils/idGenerator.js'; 
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
-export const registerUser = async (req, res) => {
-  try {
+export const registerUser = asyncHandler(async (req, res) => {
     const { email, password, firstName, lastName, phoneNo } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+        throw new ApiError(400, "Email and password are required");
     }
 
     const existing = await User.findOne({ email });
     if (existing) {
-      return res.status(400).json({ message: "This email is already used by an existing account" });
+        throw new ApiError(400, "This email is already used by an existing account");
     }
 
     const userId = await getNextUserId(); 
@@ -30,9 +32,5 @@ export const registerUser = async (req, res) => {
 
     await newUser.save();
 
-    res.status(201).json({ message: "User registered successfully", user: newUser });
-  } catch (err) {
-    console.error("Register Error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+    return res.status(201).json(new ApiResponse(201, newUser, "User registered successfully"));
+});

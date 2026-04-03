@@ -1,175 +1,142 @@
 // Shirley
-import { Cart } from "../models/cart.model.js";
+import Cart from "../models/cart.model.js";
 import Course from "../models/course.model.js";
 import { CourseSession } from "../models/courseSession.model.js";
+import { RoomSlot } from "../models/roomSlot.model.js";
 import Room from "../models/room.model.js";
-import { RoomSlot } from "../models/roomSlot.model.js"; 
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
-// error handler function
-const handleError = (res, error)=> {
-  console.error("Error:", error);
-  return res.status(500).json({ message: "Internal Server Error" });
-};
-
-async function enrichCartItem(item) {
-  if (item.productType == "Room") {
-    const [roomDetails, slotDetails, roomSlots] = await Promise.all([
-      Room.findOne({ roomId: item.productId }).lean(),
-      RoomSlot.findOne({ roomId: item.productId, roomSlotId: Number(item.occurrenceId) }).lean(),
-      RoomSlot.find({ roomId: item.productId }).lean(),
-    ]);
-
-    return {
-      ...item,
-      product: roomDetails ?? null,
-      occurrence: slotDetails ?? null,
-      occurrences: (roomSlots ?? []).map((s) => s),
-    };
-  }
-
-  if (item.productType == "Course") {
-    const [courseDetails, sessionDetails, courseSessions] = await Promise.all([
-      Course.findOne({ courseId: item.productId }).lean(),
-      CourseSession.findOne({ sessionId: Number(item.occurrenceId) }).lean(),
-      CourseSession.find({ courseId: item.productId }).lean(),
-    ]);
-
-    return {
-      ...item,
-      product: courseDetails ?? null,
-      occurrence: sessionDetails ?? null,
-      occurrences: (courseSessions ?? []).map((s) => s),
-    };
-  }
-}
-
-// Enrich cart with product and occurrence details
+// helper to enrich cart with product and occurrence details
 async function enrichCart(cartDoc) {
   if (!cartDoc) return cartDoc;
   const cart = cartDoc.toObject ? cartDoc.toObject() : cartDoc;
   if (!Array.isArray(cart.cartItems) || cart.cartItems.length === 0)
     return cart;
 
-  const enrichedItems = await Promise.all(cart.cartItems.map(enrichCartItem));
+  const enrichedItems = await Promise.all(
+    cart.cartItems.map(async (item) => {
+      let product = null;
+      let occurrence = null;
+
+      if (item.productType === "Course") {
+        product = await Course.findOne({ courseId: item.productId }).lean();
+        occurrence = await CourseSession.findOne({
+          sessionId: item.occurrenceId,
+        }).lean();
+      } else if (item.productType === "Room") {
+        product = await Room.findOne({ roomId: item.productId }).lean();
+        occurrence = await RoomSlot.findOne({
+          roomSlotId: item.occurrenceId,
+        }).lean();
+      }
+
+      const occurrences =
+        item.productType === "Course"
+          ? await CourseSession.find({ courseId: item.productId }).lean()
+          : await RoomSlot.find({ roomId: item.productId }).lean();
+
+      return {
+        ...item,
+        product,
+        occurrence,
+        occurrences,
+      };
+    })
+  );
+
   return { ...cart, cartItems: enrichedItems };
 }
 
-// Read cart data, if cart not found, create a new cart
-const getCartById = async (req, res) => {
-  const userId = Number(req.params.userId);
+// Get cart for a user
+const getCartByUserId = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const cart = await Cart.findOne({ userId: Number(userId) });
+  if (!cart) throw new ApiError(404, "Cart not found");
+  
+  const enriched = await enrichCart(cart);
+  return res.status(200).json(new ApiResponse(200, enriched, "Cart fetched successfully"));
+});
 
-  try {
-    let cart = await Cart.findOne({ userId }).lean();
-    // console.log("Fetched cart:", cart);
-    // If no cart, create one
-    if (!cart) {
-      await Cart.create({ cartId: userId, userId: userId, cartItems: [] });
-      cart = await Cart.findOne({ userId: userId });
-    }
-    // Enrich each cart item with course/rooms details
-    if (!cart || cart.cartItems.length === 0) {
-      return res.status(200).json(cart);
-    }
-    const enriched = await enrichCart(cart);
-    return res.status(200).json(enriched);
-  } catch (error) {
-    handleError(res, error);
+// Add item to cart
+const addItemToCart = asyncHandler(async (req, res) => {
+  const { userId, productId, productType, occurrenceId } = req.body;
+
+  let cart = await Cart.findOne({ userId: Number(userId) });
+  if (!cart) {
+    const lastCart = await Cart.findOne().sort({ cartId: -1 });
+    const newCartId = (lastCart?.cartId || 0) + 1;
+    cart = await Cart.create({ userId: Number(userId), cartId: newCartId, cartItems: [] });
   }
-};
 
-//add item to cart
-const addCartItem = async (req, res) => {
-  const { userId, productType, productId, occurrenceId } = req.body;
+  const lastItem = cart.cartItems.sort((a, b) => b.itemId - a.itemId)[0];
+  const newItemId = (lastItem?.itemId || 0) + 1;
 
-  try {
-    let cart = await Cart.findOne({ userId });
-    // If no cart, create one
-    if (!cart) {
-      cart = await Cart.create({ cartId: userId, userId: userId, cartItems: [] });
-    }
+  const newItem = {
+    itemId: newItemId,
+    productId: Number(productId),
+    productType,
+    occurrenceId: Number(occurrenceId),
+  };
 
-    // Create new cart item
-    const newItem = {
-      itemId: Number(Date.now()),
-      productType,
-      productId,
-      occurrenceId,
-    };
+  cart.cartItems.push(newItem);
+  await cart.save();
 
-    // Add item to cart
-    cart.cartItems.push(newItem);
-    await cart.save();
+  return res.status(201).json(new ApiResponse(201, null, "Item added to cart"));
+});
 
-    return res.status(201).json({ message: "Item added to cart"});
-  } catch (error) {
-    handleError(res, error);
-  }
-}
 // Remove item from cart
-const removeCartItem = async (req, res) => {
+const removeCartItem = asyncHandler(async (req, res) => {
   const { cartId, itemId } = req.params;
 
-  try {
-    const cart = await Cart.findOne({ cartId: Number(cartId) });
+  const cart = await Cart.findOne({ cartId: Number(cartId) });
+  if (!cart) throw new ApiError(404, "Cart not found");
 
-    cart.cartItems = cart.cartItems.filter(
-      (item) => item.itemId !== Number(itemId)
-    );
-    await cart.save();
+  cart.cartItems = cart.cartItems.filter(
+    (item) => item.itemId !== Number(itemId)
+  );
+  await cart.save();
 
-    return res.status(200).json({ message: "Item removed successfully", cart });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  const enriched = await enrichCart(cart);
+  return res.status(200).json(new ApiResponse(200, enriched, "Item removed successfully"));
+});
 
-const removeMultipleCartItems = async (req, res) => {
+const removeMultipleCartItems = asyncHandler(async (req, res) => {
   const { cartId, itemIds } = req.body;
 
-  try {
+  const cart = await Cart.findOne({ cartId: Number(cartId) });
+  if (!cart) throw new ApiError(404, "Cart not found");
 
-    const cart = await Cart.findOne({ cartId: Number(cartId) });
+  cart.cartItems = cart.cartItems.filter(
+    (item) => !itemIds.includes(item.itemId)
+  );
+  await cart.save();
 
-    cart.cartItems = cart.cartItems.filter(
-      (item) => !itemIds.includes(item.itemId)
-    );
-    await cart.save();
+  const enriched = await enrichCart(cart);
+  return res.status(200).json(new ApiResponse(200, enriched, "Items removed successfully"));
+});
 
-    return res.status(200).json({ message: "Items removed successfully", cart });
-  } catch (error) {
-    handleError(res, error);
-  }
-}
-
-const updateCartItem = async (req, res) => {
+const updateCartItem = asyncHandler(async (req, res) => {
   const { cartId, itemId } = req.params;
   const { occurrenceId } = req.body;
 
-  try {
-    // Note: Number() is compulsory
-    const updated = await Cart.findOneAndUpdate(
-      { cartId: String(cartId), "cartItems.itemId": itemId },
-      { $set: { "cartItems.$.occurrenceId": occurrenceId } },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: "Cart not found" });
+  const updated = await Cart.findOneAndUpdate(
+    { cartId: Number(cartId), "cartItems.itemId": Number(itemId) },
+    { $set: { "cartItems.$.occurrenceId": Number(occurrenceId) } },
+    { new: true }
+  );
 
-    const enriched = await enrichCart(updated);
+  if (!updated) throw new ApiError(404, "Cart item not found");
 
-    return res
-      .status(200)
-      .json({ message: "Item updated successfully", cart: enriched });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
-
+  const enriched = await enrichCart(updated);
+  return res.status(200).json(new ApiResponse(200, enriched, "Cart item updated successfully"));
+});
 
 export {
-
+  getCartByUserId,
+  addItemToCart,
   removeCartItem,
-  updateCartItem,
-  getCartById,
-  addCartItem,
   removeMultipleCartItems,
+  updateCartItem,
 };

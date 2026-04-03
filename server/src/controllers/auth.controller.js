@@ -2,8 +2,9 @@
 import conf from "../conf/conf.js";
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";  
-import dotenv from "dotenv";
-dotenv.config();
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
 export const filterUserData = (user) => ({
   userId: user.userId,
@@ -16,25 +17,22 @@ export const filterUserData = (user) => ({
   logoutDate: user.logoutDate,
 });
 
-export const loginUser = async (req, res) => {
-  try {
+export const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+        throw new ApiError(400, "Email and password are required.");
     }
 
     const user = await User.findOne({ email });
-    // console.log("Found user:", user);
 
     if (!user || user.password !== password) {
-      return res.status(401).json({ message: "Invalid email or password." });
+        throw new ApiError(401, "Invalid email or password.");
     }
 
     user.loginDate = new Date();
     await user.save();
 
-    // Create payload for token (include any data you want to encode)
     const payload = {
       userId: user.userId,
       email: user.email,
@@ -45,15 +43,9 @@ export const loginUser = async (req, res) => {
     };
 
     const token = jwt.sign(payload, conf.JWT_SECRET, { expiresIn: "2h" });
-    // console.log("Token generated:", token);
 
-    return res.status(200).json({
-      message: "Login successful",
-      token, // Include the token in the response
+    return res.status(200).json(new ApiResponse(200, {
+      token,
       user: filterUserData(user),
-    });
-  } catch (error) {
-    console.error("Login error:", error.message);
-    return res.status(500).json({ message: "Server error." });
-  }
-};
+    }, "Login successful"));
+});

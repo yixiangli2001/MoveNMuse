@@ -1,16 +1,18 @@
 // Marina
 import Booking from "../models/booking.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
-export const getUserBookings = async (req, res) => {
-  let { userId, page = 1, limit = 5, sortBy = "newest" } = req.query;
+export const getUserBookings = asyncHandler(async (req, res) => {
+    let { userId, page = 1, limit = 5, sortBy = "newest" } = req.query;
 
-  try {
     userId = parseInt(userId, 10);
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ message: "Invalid or missing userId" });
+        throw new ApiError(400, "Invalid or missing userId");
     }
 
     // Determine sort order
@@ -38,18 +40,13 @@ export const getUserBookings = async (req, res) => {
 
     const total = await Booking.countDocuments({ userId });
 
-    res.json({ bookings, total, page, limit });
-  } catch (err) {
-    console.error("Error fetching bookings:", err);
-    res.status(500).json({ message: "Failed to fetch bookings." });
-  }
-};
+    return res.status(200).json(new ApiResponse(200, { bookings, total, page, limit }, "Bookings fetched successfully"));
+});
 
 // POST /api/bookings
-export const createBooking = async (req, res) => {
-  let { userId, items, orderDate, orderTotal, status } = req.body || {};
+export const createBooking = asyncHandler(async (req, res) => {
+    let { userId, items, orderDate, orderTotal, status } = req.body || {};
 
-  try {
     userId = parseInt(userId, 10);
 
     if (
@@ -59,7 +56,7 @@ export const createBooking = async (req, res) => {
       typeof orderTotal !== "number" ||
       !status
     ) {
-      return res.status(400).json({ message: "Missing or invalid fields" });
+        throw new ApiError(400, "Missing or invalid fields");
     }
 
     const lastBooking = await Booking.findOne().sort({ orderId: -1 });
@@ -76,12 +73,5 @@ export const createBooking = async (req, res) => {
 
     await newBooking.save();
 
-    res.status(201).json({
-      message: "Booking created",
-      booking: newBooking,
-    });
-  } catch (err) {
-    console.error("Error creating booking:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+    return res.status(201).json(new ApiResponse(201, { booking: newBooking }, "Booking created successfully"));
+});
