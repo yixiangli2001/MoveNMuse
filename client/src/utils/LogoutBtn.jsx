@@ -16,9 +16,6 @@ function LogoutBtn() {
     // Update Redux state
     dispatch(logout());
 
-    // Notify user
-    alert("Successfully logged out!");
-
     // Redirect to home page
     navigate("/");
   };
@@ -26,9 +23,9 @@ function LogoutBtn() {
   return (
     <button
       onClick={logoutHandler}
-      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition duration-300 shadow-md"
+      className="px-6 py-2 border border-neutral-200 text-neutral-600 text-sm font-medium rounded-full hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-300"
     >
-      Logout
+      Sign Out
     </button>
   );
 }

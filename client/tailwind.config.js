@@ -5,7 +5,19 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        display: ["'Cormorant Garamond'", "serif"],
+        sans: ["'Outfit'", "sans-serif"],
+      },
+      borderRadius: {
+        "4xl": "2rem",
+        "5xl": "3rem",
+      },
+      spacing: {
+        "18": "4.5rem",
+      },
+    },
   },
   plugins: [],
 }
