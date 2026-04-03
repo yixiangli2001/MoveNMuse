@@ -1,8 +1,8 @@
 // Shirley
-import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { getPaymentHistoryById, getAllPaymentHistory } from "../services/paymentService";
+import { Link } from "react-router-dom";
 
 export default function PaymentHistory() {
   const user = useSelector((state) => state.auth.userData);
@@ -11,16 +11,14 @@ export default function PaymentHistory() {
 
   const userId = user?.userId;
   useEffect(() => {
-    // Fetch payment history data here when component mounts
     if (!user) return;
     setLoading(true);
     (async () => {
       try {
-        if (user.role == "customer") {
+        if (user.role === "customer") {
           const res = await getPaymentHistoryById(userId);
           setPaymentHistory(res.data || res);
-        }
-        if (user.role == "staff" || user.role == "admin") {
+        } else {
           const res = await getAllPaymentHistory();
           setPaymentHistory(res.data || res);
         }
@@ -30,122 +28,85 @@ export default function PaymentHistory() {
         setLoading(false);
       }
     })();
-  }, [user]);
+  }, [user, userId]);
 
-  // Helper
-  function toNumberMaybeDecimal(v) {
-  if (v && typeof v === "object" && "$numberDecimal" in v) {
-    return Number(v.$numberDecimal);
-  }
-  return Number(v);
-}
-
-// Format money values to 2 decimal places
   function formatMoney(v) {
-  const n = toNumberMaybeDecimal(v);
-  if (!isFinite(n)) return "—";
-  return n.toFixed(2);
-}
+    const n = v?.$numberDecimal ? Number(v.$numberDecimal) : Number(v || 0);
+    return n.toFixed(2);
+  }
+
+  if (!user) return null;
+
   return (
-    <div className="py-8">
-      <h1 className="text-3xl font-bold text-center mb-6">Payment History</h1>
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="bg-white shadow-md rounded-lg p-6">
-          {/* payment history table */}
-          {loading || paymentHistory === null ? (
-            <div className="bg-white shadow-md rounded-lg p-6">
-              <p className="text-center text-gray-600 animate-pulse">
-                Loading your payment history...
-              </p>
-            </div>
-          ) : !paymentHistory.length ? (
-            <div className="bg-white shadow-md rounded-lg p-6">
-              <p className="text-center text-gray-600">
-                No payment history found.
-              </p>
-            </div>
-          ) : (
-            <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-              <thead className="bg-gray-200">
-                <tr>
-                  {/* one more userID role for staff View */}
-                  {user.role == "staff" && (
-                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                      User ID
-                    </th>
-                  )}
-
-                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                    Payment ID
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                    Order ID
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                    Amount
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                    Date
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                    Status
-                  </th>
-                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                    Payment Detail
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                
-                {paymentHistory && paymentHistory.length > 0 ? (
-                  paymentHistory.map((payment) => (
-
-                    <tr key={payment.paymentId}>
-                  {/* one more userID role for staff View */}
-
-                      {user.role == "staff"&& (
-                        <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                          {payment.userId}
-                        </td>
-                      )}
-                      <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                        {payment.paymentId}
-                      </td>
-                      <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                        {payment.orderId}
-                      </td>
-                      <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                        ${formatMoney(payment.amount)}
-                      </td>
-                      <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                        {new Date(payment.paymentDate)
-                          .toISOString()
-                          .slice(0, 19)
-                          .replace("T", " ")}
-                      </td>
-                      <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                        {payment.status}
-                      </td>
-                      <td className="py-3 px-6 text-left text-sm font-medium text-gray-700">
-                        {payment.paymentDetail.cardBrand} ****
-                        {payment.paymentDetail.last4}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      className="py-3 px-6 text-left text-sm font-medium text-gray-700"
-                    >
-                      No payment history found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+    <div className="max-w-7xl mx-auto p-6 pt-32 pb-24 space-y-16">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 reveal-up">
+        <div className="space-y-4">
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-blue-600 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Back
+          </button>
+          <h1 className="text-6xl font-display font-light">Transaction <span className="italic text-blue-600">Archive</span></h1>
+          <p className="text-xl text-neutral-500 font-light max-w-xl">A complete record of your artistic investments and studio engagements.</p>
         </div>
+      </div>
+
+      <div className="min-h-screen">
+        {loading || paymentHistory === null ? (
+          <div className="py-20 text-center animate-pulse font-display text-2xl text-neutral-400">Consulting records...</div>
+        ) : !paymentHistory.length ? (
+          <div className="py-20 text-center space-y-6 reveal-up">
+            <p className="text-2xl font-display italic text-neutral-400">No transactions recorded yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-8 reveal-up" style={{ animationDelay: "100ms" }}>
+            {/* List View instead of Table */}
+            <div className="grid gap-6">
+              {paymentHistory.map((payment) => (
+                <div key={payment.paymentId} className="group glass rounded-3xl p-8 hover:shadow-2xl shadow-neutral-900/5 transition-all duration-500 border border-transparent hover:border-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                  <div className="flex flex-col md:flex-row md:items-center gap-8">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                        {payment.status}
+                      </span>
+                      <div className="text-2xl font-display text-neutral-900 pt-2">
+                        {new Date(payment.paymentDate).toLocaleDateString("en-AU", { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                      <div className="text-xs text-neutral-400 font-light">
+                        {new Date(payment.paymentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+
+                    <div className="h-px md:h-12 w-12 md:w-px bg-neutral-100 hidden md:block" />
+
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Reference</div>
+                      <div className="text-sm font-medium text-neutral-900">Payment #{payment.paymentId}</div>
+                      <div className="text-xs text-neutral-500">Order #{payment.orderId}</div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Source</div>
+                      <div className="text-sm font-medium text-neutral-900 flex items-center gap-2">
+                        {String(payment.paymentDetail?.cardBrand).toLowerCase().includes("visa") ? "Visa" : "Mastercard"}
+                        <span className="text-neutral-300">••••</span>
+                        {payment.paymentDetail?.last4 || "0000"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Amount</div>
+                    <div className="text-3xl font-display text-neutral-900">${formatMoney(payment.amount)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
